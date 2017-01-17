@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<flow xmlns="http://www.springframework.org/schema/webflow"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://www.springframework.org/schema/webflow
+http://www.springframework.org/schema/webflow/spring-webflow-2.4.xsd">
+ 
+<var name="mainClass" class="com.craft.livingcraft.model.MainClass"/>
+<var name="billingAddress" class="com.craft.livingcraft.model.BillingAddress"/>
+<var name="shippingAddress" class="com.craft.livingcraft.model.ShippingAddress"/>
+<var name="cartItem" class="com.craft.livingcraft.model.CartItem"/>
+
+
+<on-start>
+<evaluate expression="cartFlowHandler.initFlow()" result="flowScope.mainClass"></evaluate>
+</on-start>
+ 
+<!--        billing address -->
+
+   <action-state id="getBilling">
+   <evaluate expression="userDetailsService.getBillingAddressById(externalContext.sessionMap.userId)" result="flowScope.billingAddress"></evaluate>
+   <transition on="success" to="displayBilling"></transition>
+    </action-state>
+ 
+<view-state id="displayBilling" view="displaybilling" model="mainClass">
+<transition on="submit" to="validateBilling"/>
+<transition on="edit" to="editBilling"/>
+</view-state>
+ 
+ 	<action-state id="validateBilling">
+		<evaluate expression="cartFlowHandler.validateBillingAddress(billingAddress,messageContext)"/>
+ 		<transition on="success" to="getShipping" />
+		<transition on="failure" to="editBilling" />
+	</action-state>
+ 
+<view-state id="editBilling" view="billing" model="billingAddress">
+	<transition on="submit" to="validateBilling1" />
+</view-state>
+	
+	<action-state id="validateBilling1">
+		<evaluate expression="cartFlowHandler.validateBillingAddress(billingAddress,messageContext)"/>
+ 		<transition on="success" to="displayBilling" />
+		<transition on="failure" to="editBilling" />
+	</action-state>
+	
+	
+<!-- 	    shipping address -->
+	
+    <action-state id="getShipping">
+     <evaluate expression="userDetailsService.getShippingAddressById(externalContext.sessionMap.userId)" result="flowScope.shippingAddress"></evaluate>
+     <transition on="success" to="displayShipping"></transition>
+    </action-state>
+	
+<view-state id="displayShipping" view="displayshipping" model="shippingAddress">
+<transition on="submit" to="validateShipping"/>
+<transition on="edit" to="editShipping"/>	
+</view-state>
+	
+	<action-state id="validateShipping">
+		<evaluate expression="cartFlowHandler.validateShippingAddress(shippingAddress,messageContext)"/>
+ 		<transition on="success" to="payment" />
+		<transition on="failure" to="editShipping" />
+	</action-state>
+	
+<view-state id="editShipping" view="shipping" model="shippingAddress">
+<transition on="submit" to="validateShipping1" />
+</view-state>	
+
+    <action-state id="validateShipping1">
+		<evaluate expression="cartFlowHandler.validateShippingAddress(shippingAddress,messageContext)"/>
+ 		<transition on="success" to="displayShipping" />
+		<transition on="failure" to="editShipping" />
+	</action-state>
+	
+<!-- 	      payment -->
+	
+
+<view-state id="payment" view="payment" model="cartItem">
+<transition on="submit" to="flag"/>
+</view-state>
+	
+	<action-state id="flag">
+     <evaluate expression="cartItemService.updateFlag(externalContext.sessionMap.cartItemId)" result="flowScope.cartItem"></evaluate>
+     <transition to="thankyou"></transition>
+    </action-state>
+
+<view-state id="thankyou" view="thankyou" model="cartItem">
+<transition on="submit" to="home"/>
+</view-state>
+	
+	
+	<end-state id="home" view="index" />
+	<end-state id ="toHome" view="externalRedirect:contextRelative:index.jsp" />
+	<end-state id="toException" view="externalRedirect:contextRelative:exception.jsp" />
+ 
+<!-- 	these events are available in every state  -->
+	<global-transitions>
+		<transition on="home" to="toHome" />
+		<transition on="error" to="toException" />
+	</global-transitions>
+</flow>
